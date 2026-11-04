@@ -2,7 +2,8 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::jint;
 use jni::JNIEnv;
 use rxing::{
-    common::HybridBinarizer, BinaryBitmap, MultiFormatReader, PlanarYUVLuminanceSource, Reader,
+    common::HybridBinarizer, BinaryBitmap, LuminanceSource, MultiFormatReader,
+    PlanarYUVLuminanceSource, Reader,
 };
 use std::rc::Rc;
 
@@ -25,7 +26,7 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
 
     let mut reader = MultiFormatReader::default();
 
-    // 1. Normal Tarama (QR, DataMatrix, Barkod vb. tüm formatlar)
+    // 1. Normal Tarama (9 parametre: sondaki iki bool -> reverse_horizontal: false, inverted: false)
     if let Ok(source) = PlanarYUVLuminanceSource::new_with_all(
         u8_bytes.clone(),
         w,
@@ -35,8 +36,9 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
         w,
         h,
         false,
+        false,
     ) {
-        let binarizer = HybridBinarizer::new(source);
+        let binarizer = HybridBinarizer::new(Box::new(source));
         let mut bitmap = BinaryBitmap::new(Rc::new(binarizer));
         if let Ok(result) = reader.decode(&mut bitmap) {
             let out = format!("{:?}|{}", result.getBarcodeFormat(), result.getText());
@@ -44,7 +46,7 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
         }
     }
 
-    // 2. Ters (Negatif / Siyah zemin üstü beyaz kodlar) Tarama
+    // 2. Ters (Negatif / Siyah zemin üstü beyaz) Tarama (inverted: true)
     if let Ok(inv_source) = PlanarYUVLuminanceSource::new_with_all(
         u8_bytes,
         w,
@@ -53,9 +55,10 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
         0,
         w,
         h,
+        false,
         true,
     ) {
-        let inv_binarizer = HybridBinarizer::new(inv_source);
+        let inv_binarizer = HybridBinarizer::new(Box::new(inv_source));
         let mut inv_bitmap = BinaryBitmap::new(Rc::new(inv_binarizer));
         if let Ok(result) = reader.decode(&mut inv_bitmap) {
             let out = format!("{:?}|{}", result.getBarcodeFormat(), result.getText());
