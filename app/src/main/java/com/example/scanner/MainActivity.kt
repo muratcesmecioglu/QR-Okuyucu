@@ -462,7 +462,8 @@ class MainActivity : AppCompatActivity() {
 
     // Alt listedeki son 3 okumadan birine tıklandığında çalışır
     private fun onHistoryItemClicked(raw: String) {
-        triggerHaptic()
+        val prefs = getSharedPreferences("scanner_prefs", Context.MODE_PRIVATE)
+        if (prefs.getBoolean("vibrate", true)) triggerHaptic()
         val parts = raw.split("|", limit = 2)
         val content = parts.getOrNull(1) ?: raw
 
@@ -738,9 +739,28 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun triggerHaptic() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            (getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager)
-                .defaultVibrator.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
-        }
+        try {
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val manager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                manager.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                getSystemService(Context.VIBRATOR_SERVICE) as android.os.Vibrator
+            }
+
+            if (!vibrator.hasVibrator()) return
+
+            // 100ms net hissedilir titreşim
+            val effect = VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val attrs = android.os.VibrationAttributes.createForUsage(
+                    android.os.VibrationAttributes.USAGE_NOTIFICATION
+                )
+                vibrator.vibrate(effect, attrs)
+            } else {
+                vibrator.vibrate(effect)
+            }
+        } catch (_: Exception) {}
     }
 }
