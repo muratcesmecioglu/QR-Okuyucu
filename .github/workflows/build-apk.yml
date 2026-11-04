@@ -17,6 +17,8 @@ jobs:
 
       - name: Gradle Kur
         uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.5'
 
       - name: Rust ve Hedefleri Kur
         uses: dtolnay/rust-toolchain@stable
