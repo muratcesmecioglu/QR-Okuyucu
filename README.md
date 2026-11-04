@@ -117,3 +117,13 @@ Uygulamayı kurduktan sonra:
 ## 📄 Lisans
 
 Bu proje tamamen açık kaynaklıdır. Dilediğiniz gibi kullanabilir, çatallayabilir (fork) ve geliştirebilirsiniz.
+
+---
+
+## 📄 Değişim Günlüğü
+
+v1.1
+- Otomatik kapanma seçeneğinde link okutursanız panoya kopyalayıp çıkıyordu. Artık linki otomatik açıp programı kapatabiliyor. 
+
+v1
+- İlk sürüm
