@@ -2,9 +2,9 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::jint;
 use jni::JNIEnv;
 use rxing::{
-    common::HybridBinarizer, BarcodeFormat, BinaryBitmap, DecodeHints,
-    LuminanceSource, MultiFormatReader, PlanarYUVLuminanceSource,
+    common::HybridBinarizer, BinaryBitmap, MultiFormatReader, PlanarYUVLuminanceSource, Reader,
 };
+use std::rc::Rc;
 
 #[no_mangle]
 pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local>(
@@ -23,34 +23,41 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
     let w = width as usize;
     let h = height as usize;
 
-    let source = PlanarYUVLuminanceSource::new(u8_bytes, w, h, 0, 0, w, h, false);
-
-    let mut hints = DecodeHints::default();
-    hints.PossibleFormats = Some(vec![
-        BarcodeFormat::QR_CODE,
-        BarcodeFormat::DATA_MATRIX,
-        BarcodeFormat::AZTEC,
-        BarcodeFormat::EAN_13,
-        BarcodeFormat::EAN_8,
-        BarcodeFormat::CODE_128,
-        BarcodeFormat::CODE_39,
-        BarcodeFormat::PDF_417,
-    ]);
-    hints.TryHarder = Some(true);
-
     let mut reader = MultiFormatReader::default();
 
-    let binarizer = HybridBinarizer::new(source.clone());
-    let mut bitmap = BinaryBitmap::new(binarizer);
-    if let Ok(result) = reader.decode_with_hints(&mut bitmap, &hints) {
-        let out = format!("{:?}|{}", result.getBarcodeFormat(), result.getText());
-        return env.new_string(out).unwrap();
+    // 1. Normal Tarama (QR, DataMatrix, Barkod vb. tüm formatlar)
+    if let Ok(source) = PlanarYUVLuminanceSource::new_with_all(
+        u8_bytes.clone(),
+        w,
+        h,
+        0,
+        0,
+        w,
+        h,
+        false,
+    ) {
+        let binarizer = HybridBinarizer::new(source);
+        let mut bitmap = BinaryBitmap::new(Rc::new(binarizer));
+        if let Ok(result) = reader.decode(&mut bitmap) {
+            let out = format!("{:?}|{}", result.getBarcodeFormat(), result.getText());
+            return env.new_string(out).unwrap();
+        }
     }
 
-    if let Ok(inverted_source) = source.invert() {
-        let inv_binarizer = HybridBinarizer::new(inverted_source);
-        let mut inv_bitmap = BinaryBitmap::new(inv_binarizer);
-        if let Ok(result) = reader.decode_with_hints(&mut inv_bitmap, &hints) {
+    // 2. Ters (Negatif / Siyah zemin üstü beyaz kodlar) Tarama
+    if let Ok(inv_source) = PlanarYUVLuminanceSource::new_with_all(
+        u8_bytes,
+        w,
+        h,
+        0,
+        0,
+        w,
+        h,
+        true,
+    ) {
+        let inv_binarizer = HybridBinarizer::new(inv_source);
+        let mut inv_bitmap = BinaryBitmap::new(Rc::new(inv_binarizer));
+        if let Ok(result) = reader.decode(&mut inv_bitmap) {
             let out = format!("{:?}|{}", result.getBarcodeFormat(), result.getText());
             return env.new_string(out).unwrap();
         }
