@@ -1,0 +1,42 @@
+name: Build APK
+
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu Cek
+        uses: actions/checkout@v4
+
+      - name: Java Kur
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Gradle Kur
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Rust ve Hedefleri Kur
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi
+
+      - name: Cargo NDK Kur
+        run: cargo install cargo-ndk
+
+      - name: Rust Core Derle
+        run: |
+          cd rust_core
+          cargo ndk -t arm64-v8a -o ../app/src/main/jniLibs build --release
+          cargo ndk -t armeabi-v7a -o ../app/src/main/jniLibs build --release
+
+      - name: APK Derle
+        run: gradle assembleDebug
+
+      - name: APK Yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hizli-Kod-Okuyucu-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
