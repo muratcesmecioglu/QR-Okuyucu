@@ -31,31 +31,55 @@ class SettingsActivity : AppCompatActivity() {
         root.addView(title)
 
         // 1. Okuma sonrası otomatik kopyalama
-        root.addView(createSwitchRow(
+        val (autoCopyRow, _) = createSwitchRow(
             title = "Okuma sonrası otomatik kopyala",
             subtitle = "Açık olduğunda okunan kodu sormadan panoya kopyalar",
             checked = prefs.getBoolean("auto_copy", true)
         ) { isChecked ->
             prefs.edit().putBoolean("auto_copy", isChecked).apply()
-        })
+        }
+        root.addView(autoCopyRow)
+
+        val isAutoCloseEnabled = prefs.getBoolean("auto_close", false)
+
+        // 3. Alt Ayar: Linkleri otomatik aç (Okuma sonrası kapansın'a bağlı)
+        val (autoOpenUrlRow, autoOpenUrlSwitch) = createSwitchRow(
+            title = "↳ Linkleri otomatik aç",
+            subtitle = "Açık olduğunda linkleri tarayıcıda açar, kapalıysa kopyalayıp çıkar",
+            checked = prefs.getBoolean("auto_open_url", false)
+        ) { isChecked ->
+            prefs.edit().putBoolean("auto_open_url", isChecked).apply()
+        }
+        autoOpenUrlRow.setPadding(36, 24, 0, 32)
+
+        // İlk açılışta aktiflik durumunu ayarla
+        autoOpenUrlSwitch.isEnabled = isAutoCloseEnabled
+        autoOpenUrlRow.alpha = if (isAutoCloseEnabled) 1.0f else 0.4f
 
         // 2. Okuma sonrası kapansın
-        root.addView(createSwitchRow(
+        val (autoCloseRow, _) = createSwitchRow(
             title = "Okuma sonrası kapansın",
             subtitle = "Açık olduğunda soru sormadan işlemi yapıp uygulamayı kapatır",
-            checked = prefs.getBoolean("auto_close", false)
+            checked = isAutoCloseEnabled
         ) { isChecked ->
             prefs.edit().putBoolean("auto_close", isChecked).apply()
-        })
+            // Alt ayarı dinamik olarak aktif/pasif yap
+            autoOpenUrlSwitch.isEnabled = isChecked
+            autoOpenUrlRow.alpha = if (isChecked) 1.0f else 0.4f
+        }
 
-        // 3. Titreşim
-        root.addView(createSwitchRow(
+        root.addView(autoCloseRow)
+        root.addView(autoOpenUrlRow)
+
+        // 4. Titreşim
+        val (vibrateRow, _) = createSwitchRow(
             title = "Okumada titreşim",
-            subtitle = "Kod okunduğunda hafif titreşim verir",
+            subtitle = "Kod okunduğunda fiziksel titreşim verir",
             checked = prefs.getBoolean("vibrate", true)
         ) { isChecked ->
             prefs.edit().putBoolean("vibrate", isChecked).apply()
-        })
+        }
+        root.addView(vibrateRow)
 
         setContentView(root)
     }
@@ -65,7 +89,7 @@ class SettingsActivity : AppCompatActivity() {
         subtitle: String,
         checked: Boolean,
         onChanged: (Boolean) -> Unit
-    ): LinearLayout {
+    ): Pair<LinearLayout, SwitchCompat> {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
@@ -100,6 +124,6 @@ class SettingsActivity : AppCompatActivity() {
 
         row.addView(textContainer)
         row.addView(switchView)
-        return row
+        return Pair(row, switchView)
     }
 }

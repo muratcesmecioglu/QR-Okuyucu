@@ -514,6 +514,7 @@ class MainActivity : AppCompatActivity() {
         val prefs = getSharedPreferences("scanner_prefs", Context.MODE_PRIVATE)
         val autoCopy = prefs.getBoolean("auto_copy", true)
         val autoClose = prefs.getBoolean("auto_close", false)
+        val autoOpenUrl = prefs.getBoolean("auto_open_url", false)
         val vibrate = prefs.getBoolean("vibrate", true)
 
         if (vibrate) triggerHaptic()
@@ -528,17 +529,26 @@ class MainActivity : AppCompatActivity() {
 
         val wifiData = if (isWifi) parseWifiQr(content) else null
 
-        if (autoCopy) {
-            val textToCopy = wifiData?.second ?: content
-            copyToClipboard(textToCopy, showToast = autoClose)
+        // 1. "Okuma sonrası kapansın" AÇIK ise:
+        if (autoClose) {
+            if (isUrl && autoOpenUrl) {
+                // Linkleri otomatik aç AÇIK -> (Otomatik kopyalama açıksa kopyala), linki aç ve çık
+                if (autoCopy) {
+                    copyToClipboard(content, showToast = false)
+                }
+                openExternalUrl(content)
+            } else {
+                // Linkleri otomatik aç KAPALI (veya kod link değil) -> Panoya kopyala ve çık
+                copyToClipboard(wifiData?.second ?: content, showToast = true)
+                finish()
+            }
+            return
         }
 
-        if (autoClose) {
-            if (!autoCopy) {
-                copyToClipboard(wifiData?.second ?: content, showToast = true)
-            }
-            finish()
-            return
+        // 2. "Okuma sonrası kapansın" KAPALI ise:
+        if (autoCopy) {
+            val textToCopy = wifiData?.second ?: content
+            copyToClipboard(textToCopy, showToast = false)
         }
 
         val dialogBuilder = AlertDialog.Builder(this)
