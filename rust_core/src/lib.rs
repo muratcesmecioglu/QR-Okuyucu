@@ -2,14 +2,14 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::jint;
 use jni::JNIEnv;
 use rxing::{
-    common::HybridBinarizer, BinaryBitmap, LuminanceSource, MultiFormatReader,
+    common::HybridBinarizer, BinaryBitmap, MultiFormatReader,
     PlanarYUVLuminanceSource, Reader,
 };
 use std::rc::Rc;
 
 #[no_mangle]
 pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local>(
-    mut env: JNIEnv<'local>,
+    env: JNIEnv<'local>,
     _class: JClass<'local>,
     y_buffer: JByteArray<'local>,
     width: jint,
@@ -26,7 +26,7 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
 
     let mut reader = MultiFormatReader::default();
 
-    // 1. Normal Tarama (9 parametre: sondaki iki bool -> reverse_horizontal: false, inverted: false)
+    // 1. Normal Tarama (QR, DataMatrix, Barkod vb.)
     if let Ok(source) = PlanarYUVLuminanceSource::new_with_all(
         u8_bytes.clone(),
         w,
@@ -46,7 +46,7 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
         }
     }
 
-    // 2. Ters (Negatif / Siyah zemin üstü beyaz) Tarama (inverted: true)
+    // 2. Ters (Negatif / Siyah zemin üstü beyaz) Tarama
     if let Ok(inv_source) = PlanarYUVLuminanceSource::new_with_all(
         u8_bytes,
         w,
