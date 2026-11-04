@@ -29,6 +29,12 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".SettingsActivity"
+            android:exported="false"
+            android:label="Ayarlar"
+            android:screenOrientation="portrait" />
+
         <service
             android:name=".ScannerTileService"
             android:icon="@android:drawable/ic_menu_camera"
