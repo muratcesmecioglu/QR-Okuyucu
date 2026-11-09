@@ -1,11 +1,11 @@
-# ⚡ Hızlı Kod Okuyucu (Rust + Android)
+# ⚡ Hızlı Kod Okuyucu (Rust + zxing-cpp + Android)
 
-![Rust](https://img.shields.io/badge/Engine-Rust-orange?style=for-the-badge&logo=rust)
+![Rust](https://img.shields.io/badge/Engine-Rust%20%2B%20zxing--cpp-orange?style=for-the-badge&logo=rust)
 ![Android](https://img.shields.io/badge/Platform-Android-3DDC84?style=for-the-badge&logo=android)
 ![Ad-Free](https://img.shields.io/badge/100%25-Reklamsız%20%26%20Sınırsız-brightgreen?style=for-the-badge)
 ![Privacy](https://img.shields.io/badge/Gizlilik-İnternet%20İzni%20Yok-blue?style=for-the-badge)
 
-**Hızlı Kod Okuyucu**, görüntü işleme ve kod çözme çekirdeği **Rust** diliyle yazılmış, Android üzerinde sıfır gecikmeyle çalışan ultra hafif, sade ve modern bir QR / Barkod okuyucudur.
+**Hızlı Kod Okuyucu**, görüntü işleme ve kod çözme katmanı **Rust** diliyle ve **[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp)** çekirdeğiyle güçlendirilmiş, Android üzerinde sıfır gecikmeyle çalışan ultra hafif, sade ve modern bir QR / Barkod okuyucudur.
 
 Piyasadaki abonelik dayatan, tam ekran reklamlarla bekleten ve verilerinizi sunuculara gönderen uygulamalara karşı; **tamamen reklamsız, sınırsız ve %100 çevrimdışı** olarak tasarlanmıştır.
 
@@ -15,7 +15,7 @@ Piyasadaki abonelik dayatan, tam ekran reklamlarla bekleten ve verilerinizi sunu
 
 * **🚫 %100 Reklamsız ve Sınırsız:** Uygulama içi satın alma, tarama limiti, abonelik veya reklam banner'ı yoktur.
 * **🔒 Tam Gizlilik (`INTERNET` İzni Bile Yoktur):** Uygulama Android'den internet erişim izni dahi istemez. Okuttuğunuz şifreler, linkler ve kişisel kodlar cihazınızdan dışarı **asla** çıkmaz.
-* **🦀 Rust Gücüyle Anında Okuma:** Kamera kareleri JNI üzerinden doğrudan Rust (`rxing`) motoruna aktarılır. Sadece vizör karesinin içi kırpılarak (crop) işlendiği için milisaniyeler içinde sonuç verir.
+* **🦀 Rust & [zxing-cpp](https://github.com/zxing-cpp/zxing-cpp) Gücüyle Anında Okuma:** Kamera kareleri JNI üzerinden kopyalanmadan (zero-copy `ImageView`) doğrudan Rust ve C++20 SIMD hızlandırmalı **[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp)** motoruna aktarılır. Sadece vizör karesinin içi kırpılarak (crop) işlendiği için milisaniyeler içinde sonuç verir.
 
 ---
 
@@ -51,9 +51,10 @@ Okunan verinin türünü otomatik olarak tanır ve uygun seçenekleri sunar:
 * **Ses Tuşlarıyla Flaş Kontrolü:** Karanlık ortamlarda ekranda buton aramak yerine telefonun **Ses Açma / Kısma** tuşlarına basarak flaşı (feneri) anında açıp kapatabilirsiniz.
 * **Çift Dokunuşla Hızlı Zoom (2.5x):** Uzaktaki veya çok küçük kodları okumak için ekrana çift dokunarak anında 2.5 kat yakınlaştırma yapabilirsiniz.
 
-### 7. 🔄 Ters (Negatif) ve Dikey Barkod Desteği
-* Karanlık mod tasarımlarında kullanılan **siyah zemin üzerine beyaz (negatif) QR kodları** otomatik çözer.
-* Telefonu dik tutarken yatay market barkodlarını (1D) okuyabilmek için Rust katmanında görüntüyü otomatik olarak **90 derece döndürerek** tarar.
+### 7. 🔄 Ters (Negatif), Dikey ve Yüksek Çözünürlüklü Kod Desteği
+* Karanlık mod tasarımlarında kullanılan **siyah zemin üzerine beyaz (negatif) QR kodları** (`try_invert`) otomatik çözer.
+* Telefonu dik veya eğik tutarken yatay market barkodlarını (1D) okuyabilmek için görüntüyü her açıda (`try_rotate`) otomatik tarar.
+* Yüksek çözünürlüklü ekran görüntülerinde ve zorlu/bulanık kodlarda `try_downscale` ve `try_harder` algoritmalarıyla yüksek yakalama başarısı sunar.
 
 ---
 
@@ -61,10 +62,10 @@ Okunan verinin türünü otomatik olarak tanır ve uygun seçenekleri sunar:
 
 | 2B Matris Kodlar | 1B Çizgisel Barkodlar |
 | :--- | :--- |
-| ✅ **QR Code** (Standart & Ters/Negatif) | ✅ **EAN-13 / EAN-8** (Market & Ürün Barkodları) |
-| ✅ **Data Matrix** (İlaç & Sanayi Karekodları) | ✅ **Code 128** (Kargo & Lojistik) |
-| ✅ **Aztec** (Ulaşım & Bilet Kodları) | ✅ **Code 39** |
-| ✅ **PDF417** (Kimlik & Havayolu Biniş Kartları) | ✅ **UPC-A / UPC-E** |
+| ✅ **QR Code / Micro QR / rMQR** (Standart & Negatif) | ✅ **EAN-13 / EAN-8** (Market & Ürün Barkodları) |
+| ✅ **Data Matrix** (İlaç & Sanayi Karekodları) | ✅ **Code 128 / Code 93** (Kargo & Lojistik) |
+| ✅ **Aztec** (Ulaşım & Bilet Kodları) | ✅ **Code 39 / Codabar** |
+| ✅ **PDF417 / MaxiCode** (Kimlik & Biniş Kartları) | ✅ **UPC-A / UPC-E / DataBar** |
 
 ---
 
@@ -73,7 +74,8 @@ Okunan verinin türünü otomatik olarak tanır ve uygun seçenekleri sunar:
 Kamera ekranının sağ üst köşesindeki **⚙️ Ayarlar** butonundan kullanım alışkanlığınıza göre şu özellikleri değiştirebilirsiniz:
 
 1. **Okuma sonrası otomatik kopyala (Açık / Kapalı):** Açık olduğunda, okunan her kodu (veya Wi-Fi şifresini) size sormadan anında panoya kopyalar.
-2. **Okuma sonrası kapansın (Açık / Kapalı):** Açık olduğunda *"Tara ve Çık"* modunda çalışır; kodu okur, kopyalar ve hiçbir pencere göstermeden uygulamayı anında kapatır.
+2. **Okuma sonrası kapansın (Açık / Kapalı):** Açık olduğunda *"Tara ve Çık"* modunda çalışır; hiçbir onay penceresi göstermeden işlemi yapıp uygulamayı anında kapatır.
+   * **↳ Linkleri otomatik aç (Açık / Kapalı):** *"Okuma sonrası kapansın"* aktifken açılabilir. Açık olduğunda okutulan linkleri doğrudan tarayıcıda açıp uygulamayı kapatır; kapalıysa linki panoya kopyalayıp çıkar.
 3. **Okumada titreşim (Açık / Kapalı):** Kod başarıyla okunduğunda 100ms'lik net bir motor titreşimiyle fiziksel geri bildirim verir.
 
 ---
@@ -97,7 +99,7 @@ Uygulamayı kurduktan sonra:
 ## 🏗️ Proje Mimarisi
 
 ```text
-├── .github/workflows/build-apk.yml   # Otomatik Rust + Android APK CI/CD hattı
+├── .github/workflows/build-apk.yml   # Otomatik Rust + NDK + Android APK CI/CD hattı
 ├── app/
 │   ├── build.gradle.kts
 │   └── src/main/
@@ -108,8 +110,9 @@ Uygulamayı kurduktan sonra:
 │           ├── ScannerBridge.kt      # Rust JNI bağlantısı
 │           └── ScannerTileService.kt # Android Hızlı Ayarlar Karosu servisi
 └── rust_core/
-    ├── Cargo.toml
-    └── src/lib.rs                    # Normal, Negatif ve 90° döndürülmüş YUV çözücü motor
+    ├── Cargo.toml                    # zxing-cpp ve JNI bağımlılıkları
+    ├── build.rs                      # Android NDK C++20 statik bağlama (linker) ayarları
+    └── src/lib.rs                    # zxing-cpp tabanlı zero-copy görüntü çözücü motor
 ```
 
 ---
@@ -122,8 +125,14 @@ Bu proje tamamen açık kaynaklıdır. Dilediğiniz gibi kullanabilir, çatallay
 
 ## 📄 Değişim Günlüğü
 
-v1.1
-- Otomatik kapanma seçeneğinde link okutursanız panoya kopyalayıp çıkıyordu. Artık linki otomatik açıp programı kapatabiliyor. 
+**v2**
+- Barkod ve QR algılama altyapısı tamamen **[zxing-cpp](https://github.com/zxing-cpp/zxing-cpp)** motoruna geçirildi.
+- Sıfır kopya (`ImageView::from_slice`) bellek aktarımıyla kamera karelerini işleme hızı artırıldı.
+- Bulanık, eğik, ters (negatif) ve yüksek çözünürlüklü kodlar için donanımsal C++20 hızlandırmalı `try_rotate`, `try_invert`, `try_harder` ve `try_downscale` yetenekleri eklendi.
+- Micro QR, rMQR, MaxiCode, Codabar ve DataBar format destekleri kazanıldı.
 
-v1
-- İlk sürüm
+**v1.1**
+- Otomatik kapanma seçeneğinde link okutursanız panoya kopyalayıp çıkıyordu. Artık **Linkleri otomatik aç** alt seçeneği ile linki otomatik açıp programı kapatabiliyor.
+
+**v1**
+- İlk sürüm.
