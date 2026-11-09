@@ -1,22 +1,7 @@
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::jint;
 use jni::JNIEnv;
-use rxing::{
-    common::HybridBinarizer, BinaryBitmap, MultiFormatReader,
-    PlanarYUVLuminanceSource, Reader,
-};
-use std::rc::Rc;
-
-fn try_decode(data: Vec<u8>, w: usize, h: usize, inverted: bool) -> Option<String> {
-    let mut reader = MultiFormatReader::default();
-    let source = PlanarYUVLuminanceSource::new_with_all(
-        data, w, h, 0, 0, w, h, false, inverted,
-    ).ok()?;
-    let binarizer = HybridBinarizer::new(Box::new(source));
-    let mut bitmap = BinaryBitmap::new(Rc::new(binarizer));
-    let result = reader.decode(&mut bitmap).ok()?;
-    Some(format!("{:?}|{}", result.getBarcodeFormat(), result.getText()))
-}
+use zxingcpp::{ImageFormat, ImageView};
 
 #[no_mangle]
 pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local>(
@@ -31,33 +16,35 @@ pub extern "system" fn Java_com_example_scanner_ScannerBridge_decodeFrame<'local
         Err(_) => return env.new_string("").unwrap(),
     };
 
-    let u8_bytes: Vec<u8> = bytes.into_iter().map(|b| b as u8).collect();
-    let w = width as usize;
-    let h = height as usize;
+    let w = width as u32;
+    let h = height as u32;
 
-    if u8_bytes.len() < w * h {
+    // Görüntüyü kopyalamadan doğrudan zxing-cpp ImageView olarak bağla
+    let Ok(image_view) = ImageView::from_slice(&bytes, w, h, ImageFormat::Lum) else {
         return env.new_string("").unwrap();
-    }
+    };
 
-    // 1. Normal Tarama
-    if let Some(res) = try_decode(u8_bytes.clone(), w, h, false) {
-        return env.new_string(res).unwrap();
-    }
+    let reader = zxingcpp::read()
+        .try_rotate(true)
+        .try_invert(true)
+        .try_harder(true)
+        .try_downscale(true);
 
-    // 2. Ters (Negatif) Tarama
-    if let Some(res) = try_decode(u8_bytes.clone(), w, h, true) {
-        return env.new_string(res).unwrap();
-    }
+    if let Ok(barcodes) = reader.from(image_view) {
+        if let Some(barcode) = barcodes.first() {
+            let fmt_raw = format!("{:?}", barcode.format()).to_uppercase();
+            // Sadece Code128, Code39 gibi formatları CODE_128 yap (QRCode'u bozma)
+            let fmt = if fmt_raw.starts_with("CODE") {
+                fmt_raw.replacen("CODE", "CODE_", 1)
+            } else if fmt_raw == "QRCODE" {
+                "QR_CODE".to_string()
+            } else {
+                fmt_raw
+            };
 
-    // 3. 90 Derece Döndürülmüş Tarama (Dik tutulan 1D barkodlar için)
-    let mut rotated = vec![0u8; w * h];
-    for y in 0..h {
-        for x in 0..w {
-            rotated[x * h + (h - 1 - y)] = u8_bytes[y * w + x];
+            let out = format!("{}|{}", fmt, barcode.text());
+            return env.new_string(out).unwrap();
         }
-    }
-    if let Some(res) = try_decode(rotated, h, w, false) {
-        return env.new_string(res).unwrap();
     }
 
     env.new_string("").unwrap()
